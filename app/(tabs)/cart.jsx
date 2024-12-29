@@ -12,52 +12,72 @@ import { AntDesign } from "@expo/vector-icons";
 
 const Carts = () => {
   const [modalVisible, setModalVisible] = useState(false);
-  const [productDetails, setProductDetails] = useState({
-    id: "",
-    name: "",
-    price: "",
-    quantity: "",
-  });
+  const [id, setID] = useState("");
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [qty, setQty] = useState("");
   const [items, setItems] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Update productDetails whenever currentIndex changes
+  // Update input fields whenever currentIndex changes
   useEffect(() => {
     if (items[currentIndex]) {
-      setProductDetails(items[currentIndex]);
+      const { id, name, price, qty } = items[currentIndex];
+      setID(id);
+      setName(name);
+      setPrice(price);
+      setQty(qty);
     }
-  }, [currentIndex]);
-
-  const handleInputChange = (field, value) => {
-    setProductDetails((prevDetails) => ({
-      ...prevDetails,
-      [field]: value,
-    }));
-  };
+  }, [currentIndex, items]);
 
   const addItems = () => {
-    if (
-      !productDetails.id ||
-      !productDetails.name ||
-      !productDetails.price ||
-      !productDetails.quantity
-    ) {
+    if (!id || !name || !price || !qty) {
       alert("Please fill in all fields.");
       return;
     }
   
-    // Add item to the list
-    setItems((prevItems) => {
-      const updatedItems = [...prevItems, productDetails];
-      setProductDetails({ id: "", name: "", price: "", quantity: "" });
+    const productList = {
+      id,
+      name,
+      price,
+      qty,
+    };
   
-      // Correctly set currentIndex after the new item is added
-      setCurrentIndex(updatedItems.length - 1); // Update to the new item index
-      return updatedItems;
-    });
+    // Add the new product to items
+    setItems((prevItems) => [...prevItems, productList]);
+  
+    // Clear input fields and reset currentIndex
+    setID("");
+    setName("");
+    setPrice("");
+    setQty("");
+    setCurrentIndex(items.length + 1); // Move the index to the new item
   };
   
+  useEffect(() => {
+    if (currentIndex < items.length && items[currentIndex]) {
+      const { id, name, price, qty } = items[currentIndex];
+      setID(id);
+      setName(name);
+      setPrice(price);
+      setQty(qty);
+    } else {
+      setID("");
+      setName("");
+      setPrice("");
+      setQty("");
+    }
+  }, [currentIndex, items]);
 
+  const displayData = () => {
+    items.forEach(result => {
+        console.log("All id "+result.id)
+        console.log("All name "+result.name)
+        console.log("All price "+result.price)
+        console.log("All qty "+result.qty)
+    });
+  }
+  
   const handleSwipe = (direction) => {
     if (direction === "next" && currentIndex < items.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -84,26 +104,19 @@ const Carts = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalView}>
             <View style={styles.modalButtons}>
-                <View style={styles.modalClose}>
-                    <Pressable
-                        onPress={() => setModalVisible(false)}
-                    >
-                        <AntDesign
-                            name="close"
-                            size={28}
-                            color="black"
-                        />
-                    </Pressable>
-                </View>
+              <View style={styles.modalClose}>
+                <Pressable onPress={() => setModalVisible(false)}>
+                  <AntDesign name="close" size={28} color="black" />
+                </Pressable>
+              </View>
               <View style={styles.exitButton}>
-                <Pressable
-                    onPress={()=>{}}
-                >
-                    <AntDesign
+                <Pressable>
+                  <AntDesign
                     name="check"
                     size={28}
                     color="black"
-                    />
+                    onPress={() => {displayData()}}
+                  />
                 </Pressable>
               </View>
             </View>
@@ -113,8 +126,8 @@ const Carts = () => {
                 <Text style={styles.label}>ID:</Text>
                 <TextInput
                   style={styles.input}
-                  value={productDetails.id}
-                  onChangeText={(text) => handleInputChange("id", text)}
+                  value={id}
+                  onChangeText={(text) => setID(text)}
                   placeholder="Enter product ID"
                 />
               </View>
@@ -123,8 +136,8 @@ const Carts = () => {
                 <Text style={styles.label}>Name:</Text>
                 <TextInput
                   style={styles.input}
-                  value={productDetails.name}
-                  onChangeText={(text) => handleInputChange("name", text)}
+                  value={name}
+                  onChangeText={(text) => setName(text)}
                   placeholder="Enter product name"
                 />
               </View>
@@ -133,8 +146,8 @@ const Carts = () => {
                 <Text style={styles.label}>Price:</Text>
                 <TextInput
                   style={styles.input}
-                  value={productDetails.price}
-                  onChangeText={(text) => handleInputChange("price", text)}
+                  value={price}
+                  onChangeText={(text) => setPrice(text)}
                   placeholder="Enter product price"
                   keyboardType="numeric"
                 />
@@ -144,8 +157,8 @@ const Carts = () => {
                 <Text style={styles.label}>Qty:</Text>
                 <TextInput
                   style={styles.input}
-                  value={productDetails.quantity}
-                  onChangeText={(text) => handleInputChange("quantity", text)}
+                  value={qty}
+                  onChangeText={(text) => setQty(text)}
                   placeholder="Enter quantity"
                   keyboardType="numeric"
                 />
@@ -157,7 +170,9 @@ const Carts = () => {
                 <Pressable onPress={() => handleSwipe("prev")}>
                   <Text style={styles.paginationButton}>Prev</Text>
                 </Pressable>
-                <Text>{currentIndex + 1} / {items.length}</Text>
+                <Text>
+                  {currentIndex + 1} / {items.length}
+                </Text>
                 <Pressable onPress={() => handleSwipe("next")}>
                   <Text style={styles.paginationButton}>Next</Text>
                 </Pressable>
@@ -173,7 +188,6 @@ const Carts = () => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
