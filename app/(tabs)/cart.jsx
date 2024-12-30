@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { Card } from "@rneui/themed";
+import { PanGestureHandler } from 'react-native-gesture-handler';
+import { Swipeable, RectButton } from "react-native-gesture-handler";
 
 
 const Carts = () => {
@@ -72,7 +74,11 @@ const Carts = () => {
     }
   }, [currentIndex, items]);
 
-  
+  const onDelete = (item) => {
+    setProductList((prevItems) => prevItems.filter((i) => i.id !== item.id));
+    setItems((prevItems) => prevItems.filter((i) => i.id !== item.id));
+  };
+
   const handleSwipe = (direction) => {
     if (direction === "next" && currentIndex < items.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -81,70 +87,62 @@ const Carts = () => {
     }
   };
 
-  const renderRightActions = (progress, dragX, item, index) => {
-    const width = 80;
+  const renderRightActions = (progress, dragX, item) => {
     const translateX = progress.interpolate({
       inputRange: [0, 1],
-      outputRange: [width, 0],
+      outputRange: [80, 0],
       extrapolate: "clamp",
     });
 
-
     return (
-      <Animated.View
-        style={[
-          styles.actionsContainer,
-          { width: containerWidth, transform: [{ translateX }] },
-        ]}
-      >
-        <RectButton
-           style={styles.deleteButton}
-           onPress={() => onDelete(item)}
-        >
-        <Text style={styles.deleteButtonText}>Delete</Text>
+      <Animated.View style={[styles.actionsContainer, { transform: [{ translateX }] }]}>
+        <RectButton style={styles.deleteButton} onPress={() => onDelete(item)}>
+          <Text style={styles.deleteButtonText}>Delete</Text>
         </RectButton>
       </Animated.View>
     );
   };
 
+  const renderItem = ({ item }) => (
+    <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}>
+      <View style={styles.row}>
+        <Text style={styles.text}>{item.id}</Text>
+        <Text style={styles.text}>{item.name}</Text>
+        <Text style={styles.text}>{item.price}</Text>
+        <Text style={styles.text}>{item.qty}</Text>
+      </View>
+      <Card.Divider
+        style={{ width: "100%", marginBottom: 8 }}
+        color="#888"
+        width={1}
+        orientation="horizontal"
+        />
+    </Swipeable>
+  );
+
+
   return (
     <View style={styles.container}>
       
       <Card containerStyle={styles.mainCards}>
-        <View style={styles.header}>
-            <Text style={styles.title}>ID</Text>
-            <Text style={styles.title}>Name</Text>
-            <Text style={styles.title}>Price</Text>
-            <Text style={styles.title}>Qty</Text>
-        </View>
-        <Card.Divider
-            style={{ width: "100%", marginBottom: 8 }}
-            color="#888"
-            width={2}
-            orientation="horizontal"
-        />
-        <FlatList
-            data={productList}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-                <View>
-                    <View style={styles.row}>
-                        <Text style={styles.text}>{item.id}</Text>
-                        <Text style={styles.text}>{item.name}</Text>
-                        <Text style={styles.text}>{item.price}</Text>
-                        <Text style={styles.text}>{item.qty}</Text>
-                    </View>
-                    <Card.Divider
-                        style={{ width: "100%", marginBottom: 8 }}
-                        color="#888"
-                        width={1}
-                        orientation="horizontal"
-                    />
-                </View>
-                )}
+            <View style={styles.header}>
+                <Text style={styles.title}>ID</Text>
+                <Text style={styles.title}>Name</Text>
+                <Text style={styles.title}>Price</Text>
+                <Text style={styles.title}>Qty</Text>
+            </View>
+            <Card.Divider
+                style={{ width: "100%", marginBottom: 8 }}
+                color="#888"
+                width={2}
+                orientation="horizontal"
+            />
+            <FlatList
+                data={productList}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderItem}
             />
         </Card>
-
       
       <Pressable
         style={styles.openButton}
@@ -400,8 +398,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#FF3B30",
-    height: 35,
+    height: 45,
     width: 80,
+    marginTop: -5,
     borderRadius: 10,
   },
   deleteButtonText: {
