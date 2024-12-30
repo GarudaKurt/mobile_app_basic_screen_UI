@@ -6,9 +6,14 @@ import {
   TextInput,
   Modal,
   ScrollView,
+  TouchableOpacity,
+  Animated,
+  FlatList,
   Pressable,
 } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
+import { Card } from "@rneui/themed";
+
 
 const Carts = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -17,9 +22,9 @@ const Carts = () => {
   const [price, setPrice] = useState("");
   const [qty, setQty] = useState("");
   const [items, setItems] = useState([]);
+  const [productList, setProductList] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Update input fields whenever currentIndex changes
   useEffect(() => {
     if (items[currentIndex]) {
       const { id, name, price, qty } = items[currentIndex];
@@ -43,15 +48,13 @@ const Carts = () => {
       qty,
     };
   
-    // Add the new product to items
     setItems((prevItems) => [...prevItems, productList]);
   
-    // Clear input fields and reset currentIndex
     setID("");
     setName("");
     setPrice("");
     setQty("");
-    setCurrentIndex(items.length + 1); // Move the index to the new item
+    setCurrentIndex(items.length + 1);
   };
   
   useEffect(() => {
@@ -69,14 +72,6 @@ const Carts = () => {
     }
   }, [currentIndex, items]);
 
-  const displayData = () => {
-    items.forEach(result => {
-        console.log("All id "+result.id)
-        console.log("All name "+result.name)
-        console.log("All price "+result.price)
-        console.log("All qty "+result.qty)
-    });
-  }
   
   const handleSwipe = (direction) => {
     if (direction === "next" && currentIndex < items.length - 1) {
@@ -86,13 +81,76 @@ const Carts = () => {
     }
   };
 
+  const renderRightActions = (progress, dragX, item, index) => {
+    const width = 80;
+    const translateX = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [width, 0],
+      extrapolate: "clamp",
+    });
+
+
+    return (
+      <Animated.View
+        style={[
+          styles.actionsContainer,
+          { width: containerWidth, transform: [{ translateX }] },
+        ]}
+      >
+        <RectButton
+           style={styles.deleteButton}
+           onPress={() => onDelete(item)}
+        >
+        <Text style={styles.deleteButtonText}>Delete</Text>
+        </RectButton>
+      </Animated.View>
+    );
+  };
+
   return (
     <View style={styles.container}>
+      
+      <Card containerStyle={styles.mainCards}>
+        <View style={styles.header}>
+            <Text style={styles.title}>ID</Text>
+            <Text style={styles.title}>Name</Text>
+            <Text style={styles.title}>Price</Text>
+            <Text style={styles.title}>Qty</Text>
+        </View>
+        <Card.Divider
+            style={{ width: "100%", marginBottom: 8 }}
+            color="#888"
+            width={2}
+            orientation="horizontal"
+        />
+        <FlatList
+            data={productList}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+                <View>
+                    <View style={styles.row}>
+                        <Text style={styles.text}>{item.id}</Text>
+                        <Text style={styles.text}>{item.name}</Text>
+                        <Text style={styles.text}>{item.price}</Text>
+                        <Text style={styles.text}>{item.qty}</Text>
+                    </View>
+                    <Card.Divider
+                        style={{ width: "100%", marginBottom: 8 }}
+                        color="#888"
+                        width={1}
+                        orientation="horizontal"
+                    />
+                </View>
+                )}
+            />
+        </Card>
+
+      
       <Pressable
         style={styles.openButton}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={styles.openButtonText}>Open Modal</Text>
+        <Text style={styles.openButtonText}>Add Product</Text>
       </Pressable>
 
       <Modal
@@ -115,7 +173,7 @@ const Carts = () => {
                     name="check"
                     size={28}
                     color="black"
-                    onPress={() => {displayData()}}
+                    onPress={() => {setProductList(items)}}
                   />
                 </Pressable>
               </View>
@@ -194,11 +252,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#fff"
   },
   openButton: {
     backgroundColor: "#2196F3",
     padding: 10,
     borderRadius: 5,
+    position: "absolute",
+    bottom: 40,
   },
   openButtonText: {
     color: "#FFF",
@@ -281,6 +342,74 @@ const styles = StyleSheet.create({
     color: "#2196F3",
     fontSize: 16,
   },
+  mainCards:{
+    borderRadius: 10,
+    marginLeft: 16,
+    marginRight: 16,
+    padding: 0,
+    shadowColor: "#171717",
+    shadowOffset: { width: -2, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    height: "60%",
+    width: "100%",
+    backgroundColor: "#fff"
+  },
+  header:{
+    width: "100%",
+    flexDirection: "row",
+    padding: 5,
+    backgroundColor: "#F2E3A9",
+    borderTopColor: "#fff"
+  },
+  title: {
+    flex: 1,
+    color: "#000",
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
+    fontFamily: "Gudea-Regular",
+    fontWeight: "700",
+  },
+  row: {
+    flexDirection: "row",
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    alignItems: "center",
+    backgroundColor: "#A9DFBF",
+    borderRadius: 5,
+    marginBottom: 7,
+  },
+  text: {
+    flex: 1,
+    color: "#333",
+    fontSize: 18,
+    textAlign: "center",
+    fontFamily: "Gudea-Regular",
+    fontWeight: "500",
+  },
+  actionsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    height: 35,
+    marginTop: 8,
+  },
+  deleteButton: {
+    marginLeft: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FF3B30",
+    height: 35,
+    width: 80,
+    borderRadius: 10,
+  },
+  deleteButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  
 });
 
 export default Carts;
