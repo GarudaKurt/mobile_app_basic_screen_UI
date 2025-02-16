@@ -14,6 +14,7 @@ import {
   query,
   addDoc,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import "react-native-get-random-values";
@@ -52,22 +53,29 @@ const  Home = () => {
             voltage: fetchedData.voltage,
             current: fetchedData.current,
             power: fetchedData.power,
-            date: fetchedData.date
+            date: fetchedData.date,
+            energy: fetchedData.energy
           };
 
           try {
-            const documentId = uuidv4();
-            // Reference to a specific document in the monitoring collection
-            const userMonitoringDocRef = doc(firestore, "users", user.uid, "monitoring", documentId);
-            if(fetchedData.date === date.now)
-              // Store the data in Firestore and update if the fetchedData.date will be match today's date
-              await updateDoc(userMonitoringDocRef, sendData);
-            else
-              // Store the data in Firestore
-              await setDoc(userMonitoringDocRef, sendData);
-            console.log("Data saved successfully to Firestore!");
+            const userMonitoringCollectionRef = collection(firestore, "users", user.uid, "monitoring");
+  
+            const q = query(userMonitoringCollectionRef, where("date", "==", fetchedData.date));
+            const querySnapshot = await getDocs(q);
+  
+            if (!querySnapshot.empty) {
+              // If a document exists for today, update it
+              const existingDoc = querySnapshot.docs[0]; 
+              await updateDoc(doc(firestore, "users", user.uid, "monitoring", existingDoc.id), sendData);
+              console.log("Data updated successfully in Firestore!");
+            } else {
+              // If no document exists for today, create a new one
+              const newDocRef = doc(userMonitoringCollectionRef, uuidv4());
+              await setDoc(newDocRef, sendData);
+              console.log("New data saved successfully to Firestore!");
+            }
           } catch (error) {
-            console.error("Error saving data to Firestore:", error);
+            console.error("Error saving/updating data to Firestore:", error);
           }
         }
       }
@@ -111,7 +119,7 @@ const  Home = () => {
       <View style={styles.cardContainer}>
         {/* Gas Level Info */}
         <View style={styles.gasLevelRow}>
-          <Text style={styles.labelText}>Smart Classrom:</Text>
+          <Text style={styles.labelText}>Smart Classrom</Text>
           <View style={styles.indicator}>
             <Ionicons name="information-circle" size={24} color="#4A4A4A" />
           </View>

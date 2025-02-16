@@ -18,16 +18,19 @@ const CustomListItem = ({ icon, title }) => (
 );
 
 const Profile = () => {
-  const [userName, setUserName] = useState("John Doe");
-
   const router = useRouter()
   const logOut = useAuthStore((state) => state.logOut);
+  const getEmail = useAuthStore((state) => state.getUserEmail)
+  const getName = useAuthStore((state) => state.getUserName)
 
+  const [userName, setUserName] = useState(getEmail);
+  
+  
   const handleLogout = async () => {
     const success = await logOut();
     console.log("Logout success:", success);
     if (success) {
-      router.push("/"); // Navigate to the root `index.jsx`
+      router.push("/register");
     } else {
       console.log("Logout failed");
     }
@@ -45,17 +48,11 @@ const Profile = () => {
             containerStyle={style.avatar}
           />
           <Text style={style.profileName}>{userName}</Text>
-          <Text style={style.profileUsername}>{"No Email"}</Text>
+          <Text style={style.profileUsername}></Text>
         </View>
       </Card>
 
       <View style={style.infoContainer}>
-        <Link href="/userDetails" asChild>
-          <CustomListItem icon="shopping-cart" title="Add Product" />
-        </Link>
-        <Link href="/billing-details" asChild>
-          <CustomListItem icon="inventory" title="Inventory" />
-        </Link>
         <Link href="/friendList" asChild>
           <CustomListItem icon="bar-chart" title="Reports" />
         </Link>
