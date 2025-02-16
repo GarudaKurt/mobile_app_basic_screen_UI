@@ -31,9 +31,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="cart"
         options={{
-          title: "Carts",
+          title: "Reports",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cart" color={color} size={size} />
+            <Ionicons name="speedometer" color={color} size={size} />
           ),
         }}
       />

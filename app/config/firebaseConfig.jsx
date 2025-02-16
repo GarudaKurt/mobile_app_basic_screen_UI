@@ -10,17 +10,16 @@ import { getAuth, connectAuthEmulator } from "firebase/auth";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 // Your web app's Firebase configuration
+
 const firebaseConfig = {
-  apiKey: "AIzaSyCf_yEMzkxTZTZvhxnIUfZl3rlqdWRE9Yo",
-  authDomain: "iot-healthcare-72d91.firebaseapp.com",
-  databaseURL: "https://iot-healthcare-72d91-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "iot-healthcare-72d91",
-  storageBucket: "iot-healthcare-72d91.firebasestorage.app",
-  messagingSenderId: "471416816452",
-  appId: "1:471416816452:web:8e49d9695f3b8755044d11"
+  apiKey: "AIzaSyB36LsMDfa7VNTvs_VXoKX7Gf6keunZTGM",
+  authDomain: "ucmn-ee.firebaseapp.com",
+  databaseURL: "https://ucmn-ee-default-rtdb.firebaseio.com",
+  projectId: "ucmn-ee",
+  storageBucket: "ucmn-ee.firebasestorage.app",
+  messagingSenderId: "237293148697",
+  appId: "1:237293148697:web:52d34ddacc1f09c20a6888"
 };
-
-
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
