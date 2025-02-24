@@ -34,7 +34,6 @@ const Carts = () => {
   const renderRightActions = (progress, dragX, index) => (
     <View style={styles.actionsContainer}>
       <RectButton style={styles.deleteButton} onPress={() => onDelete(index)}>
-        <Text style={styles.deleteButtonText}>Delete</Text>
       </RectButton>
     </View>
   );
@@ -42,10 +41,11 @@ const Carts = () => {
   const renderItem = ({ item, index }) => (
     <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, index)}>
       <View style={styles.row}>
+        <Text style={styles.text}>{item.longitude}</Text>
+        <Text style={styles.text}>{item.latitude}</Text>
+        <Text style={styles.text}>{item.city}</Text>
+        <Text style={styles.text}>{item.region}</Text>
         <Text style={styles.text}>{item.date}</Text>
-        <Text style={styles.text}>{item.energy}</Text>
-        <Text style={styles.text}>{item.power}</Text>
-        <Text style={styles.text}>{item.voltage}</Text>
       </View>
       <Card.Divider style={{ width: "100%", marginBottom: 8 }} color="#888" width={1} orientation="horizontal" />
     </Swipeable>
@@ -55,14 +55,14 @@ const Carts = () => {
     <View style={styles.container}>
       <Card containerStyle={styles.mainCards}>
         <View style={styles.header}>
+          <Text style={styles.title}>Longitude</Text>
+          <Text style={styles.title}>Latitude</Text>
+          <Text style={styles.title}>City</Text>
+          <Text style={styles.title}>Region</Text>
           <Text style={styles.title}>Date</Text>
-          <Text style={styles.title}>kWh</Text>
-          <Text style={styles.title}>Watts</Text>
-          <Text style={styles.title}>Voltage</Text>
         </View>
         <Card.Divider style={{ width: "100%", marginBottom: 8 }} color="#888" width={2} orientation="horizontal" />
         
-        {/* Make the list scrollable inside a fixed height */}
         <View style={{ maxHeight: 400 }}>
           <FlatList
             data={displayedItems}
@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   mainCards: {
-    width: "90%",
-    padding: 10,
+    width: "100%",
+    padding: 15
   },
   header: {
     flexDirection: "row",

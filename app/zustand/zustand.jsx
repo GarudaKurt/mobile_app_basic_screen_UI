@@ -8,7 +8,7 @@ export const useAuthStore = create((set) => ({
   user: null,
   userMonitoringCollectionRef: null,
   userMonitoringData: [],
-  userName: null,  // Store the username
+  userName: null,
 
   setUser: async (user) => {
     set({ user });
@@ -19,7 +19,7 @@ export const useAuthStore = create((set) => ({
         set({ userMonitoringCollectionRef: monitoringRef });
 
         await useAuthStore.getState().fetchUserMonitoringData(monitoringRef);
-        await useAuthStore.getState().fetchUserName(user.uid);  // Fetch and set the username
+        await useAuthStore.getState().fetchUserName(user.uid);
 
       } catch (error) {
         console.error('Failed to store user:', error.message);
@@ -101,7 +101,7 @@ export const useAuthStore = create((set) => ({
       set({ 
         user: userCredential.user,
         userMonitoringCollectionRef: monitoringRef,
-        userName: name  // Store username at sign-up
+        userName: name
       });
 
       await AsyncStorage.setItem('user', JSON.stringify(userCredential.user));

@@ -12,13 +12,13 @@ import { getAuth, connectAuthEmulator } from "firebase/auth";
 // Your web app's Firebase configuration
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB36LsMDfa7VNTvs_VXoKX7Gf6keunZTGM",
-  authDomain: "ucmn-ee.firebaseapp.com",
-  databaseURL: "https://ucmn-ee-default-rtdb.firebaseio.com",
-  projectId: "ucmn-ee",
-  storageBucket: "ucmn-ee.firebasestorage.app",
-  messagingSenderId: "237293148697",
-  appId: "1:237293148697:web:52d34ddacc1f09c20a6888"
+  apiKey: "AIzaSyBjhAuT0ozWZRXIEYXg3x97f6vAHJaKU5c",
+  authDomain: "ucb-smart-irrigation.firebaseapp.com",
+  databaseURL: "https://ucb-smart-irrigation-default-rtdb.firebaseio.com",
+  projectId: "ucb-smart-irrigation",
+  storageBucket: "ucb-smart-irrigation.firebasestorage.app",
+  messagingSenderId: "644840671203",
+  appId: "1:644840671203:web:c53dcecef7fa4d9e1682d6"
 };
 
 const app = initializeApp(firebaseConfig);

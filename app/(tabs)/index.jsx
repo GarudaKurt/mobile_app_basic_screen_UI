@@ -20,71 +20,65 @@ import { v4 as uuidv4 } from "uuid";
 import "react-native-get-random-values";
 
 const  Home = () => {
-  const [voltage, setVoltage] = useState("");
-  const [date, setDate] = useState("");
-  const [current, setCurrent] = useState("");
-  const [power, setPower] = useState("");
-  const [energy, setEnergy] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [city, setCity] = useState("");
+  const [region, setRegion] = useState("");
+  const [cntr, setCntr] = useState(0);
+  const prevLocation = useRef("");
   const [loading, setLoading] = useState(true);
   const [isOn, setIsOn] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   
-
   useEffect(() => {
     const dataRef = ref(database, "monitoring");
-
-    // Fetch data
+  
+    // Fetch data from Realtime Database
     const unsubscribe = onValue(dataRef, async (snapshot) => {
       const fetchedData = snapshot.val();
       if (fetchedData) {
-        setVoltage(fetchedData.voltage || "N/A");
-        setCurrent(fetchedData.current || "N/A");
-        setPower(fetchedData.power || "N/A");
-        setEnergy(fetchedData.energy || "N/A")
-        setDate(fetchedData.time || "N/A");
-      }
-      if (fetchedData) {
+        setLongitude(fetchedData.longitude || "N/A");
+        setLatitude(fetchedData.latitude || "N/A");
+        setCity(fetchedData.city || "N/A");
+        setRegion(fetchedData.region || "N/A");
+        setCntr(fetchedData.cntr || -1);
+    
         const user = auth.currentUser;
         if (user) {
-          //console.error("Users detected!");
-          //Alert.alert("hello! user");
           const sendData = {
-            voltage: fetchedData.voltage,
-            current: fetchedData.current,
-            power: fetchedData.power,
-            date: fetchedData.date,
-            energy: fetchedData.energy
+            longitude: fetchedData.longitude,
+            latitude: fetchedData.latitude,
+            city: fetchedData.city,
+            region: fetchedData.region,
+            cntr: fetchedData.cntr,
+            date: new Date().toLocaleString(),
           };
-
+  
           try {
-            const userMonitoringCollectionRef = collection(firestore, "users", user.uid, "monitoring");
-  
-            const q = query(userMonitoringCollectionRef, where("date", "==", fetchedData.date));
-            const querySnapshot = await getDocs(q);
-  
-            if (!querySnapshot.empty) {
-              // If a document exists for today, update it
-              const existingDoc = querySnapshot.docs[0]; 
-              await updateDoc(doc(firestore, "users", user.uid, "monitoring", existingDoc.id), sendData);
-              console.log("Data updated successfully in Firestore!");
-            } else {
-              // If no document exists for today, create a new one
+            if (prevLocation.current !== fetchedData.longitude) {
+              const userMonitoringCollectionRef = collection(
+                firestore, "users", user.uid, "monitoring"
+              );
+          
               const newDocRef = doc(userMonitoringCollectionRef, uuidv4());
               await setDoc(newDocRef, sendData);
-              console.log("New data saved successfully to Firestore!");
+              console.log("New location logged in Firestore!");
+          
+              prevLocation.current = fetchedData.longitude;
             }
           } catch (error) {
-            console.error("Error saving/updating data to Firestore:", error);
+            console.error("Error saving data to Firestore:", error);
           }
+          
         }
       }
       setLoading(false);
     });
-
-    // Cleanup subscription on unmount
+  
     return () => unsubscribe();
-  }, [voltage, current, power, energy, date]); // Adding these dependencies ensures that the effect runs when any of them change
+  }, []);
+  
 
   if (loading) {
     return (
@@ -95,42 +89,39 @@ const  Home = () => {
   }
 
   const toggleSwitch = () => {
-    setIsOn((prev) => {
-      const newState = !prev;
+    const newState = !isOn;
+    
+    setIsOn(newState);
+    
+    const stateRef = ref(database, "monitoring/buzzer");
+    set(stateRef, newState ? "ON" : "OFF")
+      .then(() => console.log("State updated successfully"))
+      .catch((error) => console.error("Error updating state:", error));
   
-      // Update the value in Firebase Realtime Database
-      const stateRef = ref(database, "monitoring/state");
-      set(stateRef, newState)
-        .then(() => console.log("State updated successfully"))
-        .catch((error) => console.error("Error updating state:", error));
-  
-      Animated.timing(slideAnim, {
-        toValue: newState ? 30 : 0,
-        duration: 200,
-        useNativeDriver: false,
-      }).start();
-  
-      return newState;
-    });
-  };
+    // Trigger animation
+    Animated.timing(slideAnim, {
+      toValue: newState ? 30 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };  
 
   return (
     <View style={styles.container}>
       <View style={styles.cardContainer}>
-        {/* Gas Level Info */}
         <View style={styles.gasLevelRow}>
-          <Text style={styles.labelText}>Smart Classrom</Text>
+          <Text style={styles.labelText}>Smart Tracker</Text>
           <View style={styles.indicator}>
             <Ionicons name="information-circle" size={24} color="#4A4A4A" />
           </View>
         </View>
 
-        {/* Date and Time */}
         <View style={styles.dateTimeRow}>
-          <Text style={styles.dateText}>Voltage: {voltage}V</Text>
-          <Text style={styles.timeText}>Current: {current}A</Text>
-          <Text style={styles.timeText}>Power: {power}W</Text>
-          <Text style={styles.timeText}>Energy: {energy}kWh</Text>
+          <Text style={styles.dateText}>Longitude: {longitude}</Text>
+          <Text style={styles.timeText}>Latitude: {latitude}</Text>
+          <Text style={styles.timeText}>City: {city}</Text>
+          <Text style={styles.timeText}>Region: {region}</Text>
+          <Text style={styles.timeText}>Cntr: {cntr}</Text>
         </View>
 
         <View style={styles.switchContainer}>
