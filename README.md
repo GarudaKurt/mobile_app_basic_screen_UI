@@ -6,11 +6,11 @@
 
 Download and install Visual Studio Code.
 
-Download and install Node.js, selecting the Windows Installer MSI.
+Download and install Node.js, selecting the Windows Installer MSI from this link: https://nodejs.org/en/download.
 
 Installation
 
-Fork the repository or download it directly from this link.
+Fork the repository or download it directly from this link: https://github.com/GarudaKurt/mobile_app_basic_screen_UI/tree/anti-theft.
 
 Click Code and download the ZIP file.
 
