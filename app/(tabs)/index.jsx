@@ -1,110 +1,187 @@
-
 import { useState, useEffect, useRef } from "react";
 import { StyleSheet, Text, View, TouchableOpacity, Alert, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { database, firestore, auth } from "../config/firebaseConfig";
 import { ref, set, onValue } from "firebase/database";
+import * as Location from "expo-location";
 
 import {
   doc,
   setDoc,
   collection,
-  getDoc,
-  getDocs,
-  query,
-  addDoc,
-  updateDoc,
-  where,
+  onSnapshot
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import "react-native-get-random-values";
 
-const  Home = () => {
+const Home = () => {
   const [longitude, setLongitude] = useState("");
   const [latitude, setLatitude] = useState("");
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
+  const [street, setStreet] = useState("");  // 🟢 Added street state
   const [cntr, setCntr] = useState(0);
   const prevLocation = useRef("");
   const [loading, setLoading] = useState(true);
   const [isOn, setIsOn] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
 
-  
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [count, setCount] = useState(0);
+  const [permissionGranted, setPermissionGranted] = useState(false);
+
+  useEffect(() => {
+    checkPermissions();
+  }, []);
+
   useEffect(() => {
     const dataRef = ref(database, "monitoring");
   
     // Fetch data from Realtime Database
     const unsubscribe = onValue(dataRef, async (snapshot) => {
       const fetchedData = snapshot.val();
-      if (fetchedData) {
+      if (!location && fetchedData) {
         setLongitude(fetchedData.longitude || "N/A");
         setLatitude(fetchedData.latitude || "N/A");
         setCity(fetchedData.city || "N/A");
-        setRegion(fetchedData.region || "N/A");
+        setStreet(fetchedData.street || "N/A");
         setCntr(fetchedData.cntr || -1);
-    
-        const user = auth.currentUser;
-        if (user) {
-          const sendData = {
-            longitude: fetchedData.longitude,
-            latitude: fetchedData.latitude,
-            city: fetchedData.city,
-            region: fetchedData.region,
-            cntr: fetchedData.cntr,
-            date: new Date().toLocaleString(),
-          };
-  
-          try {
-            if (prevLocation.current !== fetchedData.longitude) {
-              const userMonitoringCollectionRef = collection(
-                firestore, "users", user.uid, "monitoring"
-              );
-          
-              const newDocRef = doc(userMonitoringCollectionRef, uuidv4());
-              await setDoc(newDocRef, sendData);
-              console.log("New location logged in Firestore!");
-          
-              prevLocation.current = fetchedData.longitude;
-            }
-          } catch (error) {
-            console.error("Error saving data to Firestore:", error);
-          }
-          
-        }
+        setLocation({
+          longitude: fetchedData.longitude,
+          latitude: fetchedData.latitude,
+          accuracy: "N/A",
+        });
+        setLoading(false);
       }
-      setLoading(false);
     });
-  
     return () => unsubscribe();
-  }, []);
+  }, [permissionGranted]);
   
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
+  useEffect(() => {
+    let interval;
+  
+    const saveToFirestore = async () => {
+      const user = auth.currentUser;
+      if (user && longitude && latitude && street) {
+        const sendData = {
+          longitude: longitude,
+          latitude: latitude,
+          city: city,
+          street: street,
+          date: new Date().toLocaleString(),
+        };
+  
+        try {
+          if (prevLocation.current !== street) {
+            const userMonitoringCollectionRef = collection(
+              firestore, "users", user.uid, "monitoring"
+            );
+  
+            const newDocRef = doc(userMonitoringCollectionRef, uuidv4());
+            await setDoc(newDocRef, sendData);
+            console.log("New location logged in Firestore!");
+  
+            prevLocation.current = street;
+          }
+        } catch (error) {
+          console.error("Error saving data to Firestore:", error);
+        }
+      }
+    };
+  
+    if (permissionGranted) {
+      getLocation(); 
+      interval = setInterval(() => {
+        getLocation();
+  
+        if (longitude && latitude && street) {
+          const monitoringRef = ref(database, "monitoring");
+          set(ref(database, "monitoring/longitude"), longitude).catch((error) =>
+            console.error("Error saving longitude:", error)
+          );
+          set(ref(database, "monitoring/latitude"), latitude).catch((error) =>
+            console.error("Error saving latitude:", error)
+          );
+          set(ref(database, "monitoring/city"), city).catch((error) =>
+            console.error("Error saving city:", error)
+          );
+          set(ref(database, "monitoring/street"), street).catch((error) =>
+            console.error("Error saving street:", error)
+          );
+  
+          saveToFirestore();
+        }
+      }, 10000);
+    }
+  
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [permissionGranted, longitude, latitude, city, street]);
+  
+  
+  
+
+  const checkPermissions = async () => {
+    let { status } = await Location.getForegroundPermissionsAsync();
+    if (status === "granted") {
+      setPermissionGranted(true);
+    } else {
+      let { status: newStatus } = await Location.requestForegroundPermissionsAsync();
+      setPermissionGranted(newStatus === "granted");
+    }
+  };
+
+  const getLocation = async () => {
+    if (!permissionGranted) {
+      setErrorMsg("Location permission not granted.");
+      return;
+    }
+
+    try {
+      let currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
+
+      setLocation(currentLocation.coords);
+      setCount((prevCount) => prevCount + 1);
+
+      const [address] = await Location.reverseGeocodeAsync({
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+      });
+
+      if (address) {
+        setStreet(address.street || "N/A");
+        setCity(address.city || "N/A");
+        setRegion(address.region || "N/A");
+        setLatitude(currentLocation.coords.latitude || "N/A");
+        setLongitude(currentLocation.coords.longitude || "N/A");
+      }
+
+    } catch (error) {
+      setErrorMsg("Error getting location: " + error.message);
+    }
+  };
 
   const toggleSwitch = () => {
     const newState = !isOn;
-    
+
     setIsOn(newState);
-    
+
     const stateRef = ref(database, "monitoring/buzzer");
     set(stateRef, newState ? "ON" : "OFF")
       .then(() => console.log("State updated successfully"))
       .catch((error) => console.error("Error updating state:", error));
-  
-    // Trigger animation
+
     Animated.timing(slideAnim, {
       toValue: newState ? 30 : 0,
       duration: 200,
       useNativeDriver: false,
     }).start();
-  };  
+  };
 
   return (
     <View style={styles.container}>
@@ -117,12 +194,25 @@ const  Home = () => {
         </View>
 
         <View style={styles.dateTimeRow}>
-          <Text style={styles.dateText}>Longitude: {longitude}</Text>
-          <Text style={styles.timeText}>Latitude: {latitude}</Text>
-          <Text style={styles.timeText}>City: {city}</Text>
-          <Text style={styles.timeText}>Region: {region}</Text>
-          <Text style={styles.timeText}>Cntr: {cntr}</Text>
+          {!loading && location ? (
+            <>
+              <Text style={styles.dateText}>Longitude: {location.longitude}</Text>
+              <Text style={styles.timeText}>Latitude: {location.latitude}</Text>
+              <Text style={styles.timeText}>Accuracy: {location.accuracy} meters</Text>
+              <Text style={styles.timeText}>Street: {street}</Text>
+              <Text style={styles.timeText}>City: {city}</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.dateText}>Longitude: {longitude}</Text>
+              <Text style={styles.timeText}>Latitude: {latitude}</Text>
+              <Text style={styles.timeText}>Street: {street}</Text>
+              <Text style={styles.timeText}>Count: {cntr}</Text>
+              <Text style={styles.timeText}>City: {city}</Text>
+            </>
+          )}
         </View>
+
 
         <View style={styles.switchContainer}>
           <Text style={styles.statusLabel}>{isOn ? "ON" : "OFF"}</Text>
@@ -164,18 +254,6 @@ const styles = StyleSheet.create({
     color: "#4A4A4A",
     fontWeight: "bold",
   },
-  gasValue: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  indicator: {
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderRadius: 5,
-    borderColor: "#4A4A4A",
-  },
   dateTimeRow: {
     marginBottom: 15,
   },
@@ -187,16 +265,6 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 16,
     color: "#4A4A4A",
-  },
-  statusButton: {
-    paddingVertical: 10,
-    borderRadius: 25,
-    alignItems: "center",
-  },
-  statusText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#fff",
   },
   switchContainer: {
     flexDirection: "row",
@@ -226,4 +294,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Home
+export default Home;

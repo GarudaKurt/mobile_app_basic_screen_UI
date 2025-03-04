@@ -44,7 +44,7 @@ const Carts = () => {
         <Text style={styles.text}>{item.longitude}</Text>
         <Text style={styles.text}>{item.latitude}</Text>
         <Text style={styles.text}>{item.city}</Text>
-        <Text style={styles.text}>{item.region}</Text>
+        <Text style={styles.text}>{item.street}</Text>
         <Text style={styles.text}>{item.date}</Text>
       </View>
       <Card.Divider style={{ width: "100%", marginBottom: 8 }} color="#888" width={1} orientation="horizontal" />
@@ -58,7 +58,7 @@ const Carts = () => {
           <Text style={styles.title}>Longitude</Text>
           <Text style={styles.title}>Latitude</Text>
           <Text style={styles.title}>City</Text>
-          <Text style={styles.title}>Region</Text>
+          <Text style={styles.title}>Street</Text>
           <Text style={styles.title}>Date</Text>
         </View>
         <Card.Divider style={{ width: "100%", marginBottom: 8 }} color="#888" width={2} orientation="horizontal" />
