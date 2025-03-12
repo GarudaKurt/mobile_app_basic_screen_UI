@@ -42,10 +42,10 @@ const Carts = () => {
   const renderItem = ({ item, index }) => (
     <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, index)}>
       <View style={styles.row}>
-        <Text style={styles.text}>{item.date}</Text>
-        <Text style={styles.text}>{item.energy}</Text>
-        <Text style={styles.text}>{item.power}</Text>
-        <Text style={styles.text}>{item.voltage}</Text>
+        <Text style={styles.text}>{item.time}</Text>
+        <Text style={styles.text}>{item.talking}</Text>
+        <Text style={styles.text}>{item.cellphoneCnt}</Text>
+        <Text style={styles.text}>{item.SUSPECIOUS}</Text>
       </View>
       <Card.Divider style={{ width: "100%", marginBottom: 8 }} color="#888" width={1} orientation="horizontal" />
     </Swipeable>
@@ -55,10 +55,10 @@ const Carts = () => {
     <View style={styles.container}>
       <Card containerStyle={styles.mainCards}>
         <View style={styles.header}>
-          <Text style={styles.title}>Date</Text>
-          <Text style={styles.title}>kWh</Text>
-          <Text style={styles.title}>Watts</Text>
-          <Text style={styles.title}>Voltage</Text>
+          <Text style={styles.title}>Time</Text>
+          <Text style={styles.title}>Talking</Text>
+          <Text style={styles.title}>Device</Text>
+          <Text style={styles.title}>Alarm</Text>
         </View>
         <Card.Divider style={{ width: "100%", marginBottom: 8 }} color="#888" width={2} orientation="horizontal" />
         

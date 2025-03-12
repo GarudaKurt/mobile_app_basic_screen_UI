@@ -44,9 +44,8 @@ const Index = () => {
         setWarnMessage("Invalid email or password format");
         return;
       }
-        const success = await signIn(email, password)
-        console.log("Value of ",success)
         setLoading(true);
+        const success = await signIn(email, password)
         if(success)
           router.push("(tabs)");
         else

@@ -20,11 +20,12 @@ import { v4 as uuidv4 } from "uuid";
 import "react-native-get-random-values";
 
 const  Home = () => {
-  const [voltage, setVoltage] = useState("");
+  const [cellphoneCnt, setcellphoneCnt] = useState("");
   const [date, setDate] = useState("");
-  const [current, setCurrent] = useState("");
-  const [power, setPower] = useState("");
-  const [energy, setEnergy] = useState("");
+  const [time, setTime] = useState("")
+  const [noDetectcnt, setnodeDetectcnt] = useState("");
+  const [suspecious, setSuspecios] = useState("")
+  const [talking, setTalking] = useState("")
   const [loading, setLoading] = useState(true);
   const [isOn, setIsOn] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -38,11 +39,12 @@ const  Home = () => {
     const unsubscribe = onValue(dataRef, async (snapshot) => {
       const fetchedData = snapshot.val();
       if (fetchedData) {
-        setVoltage(fetchedData.voltage || "N/A");
-        setCurrent(fetchedData.current || "N/A");
-        setPower(fetchedData.power || "N/A");
-        setEnergy(fetchedData.energy || "N/A")
-        setDate(fetchedData.time || "N/A");
+        setcellphoneCnt(fetchedData.cellphoneCnt || "N/A");
+        setnodeDetectcnt(fetchedData.nodetectionCnt || "N/A")
+        setSuspecios(fetchedData.SUSPECIOUS || "N/A")
+        setTalking(fetchedData.talking || "N/A")
+        setDate(fetchedData.date || "N/A");
+        setTime(fetchedData.time || "N/A")
       }
       if (fetchedData) {
         const user = auth.currentUser;
@@ -50,11 +52,11 @@ const  Home = () => {
           //console.error("Users detected!");
           //Alert.alert("hello! user");
           const sendData = {
-            voltage: fetchedData.voltage,
-            current: fetchedData.current,
-            power: fetchedData.power,
+            cellphoneCnt: fetchedData.cellphoneCnt,
+            nodetection: fetchedData.nodetectionCnt,
+            talking: fetchedData.talikng,
             date: fetchedData.date,
-            energy: fetchedData.energy
+            time:fetchedData.time
           };
 
           try {
@@ -84,7 +86,7 @@ const  Home = () => {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [voltage, current, power, energy, date]); // Adding these dependencies ensures that the effect runs when any of them change
+  }, [suspecious, noDetectcnt, cellphoneCnt, talking, time, date]); // Adding these dependencies ensures that the effect runs when any of them change
 
   if (loading) {
     return (
@@ -119,7 +121,7 @@ const  Home = () => {
       <View style={styles.cardContainer}>
         {/* Gas Level Info */}
         <View style={styles.gasLevelRow}>
-          <Text style={styles.labelText}>Smart Classrom</Text>
+          <Text style={styles.labelText}>ANTI CHEATING</Text>
           <View style={styles.indicator}>
             <Ionicons name="information-circle" size={24} color="#4A4A4A" />
           </View>
@@ -127,10 +129,11 @@ const  Home = () => {
 
         {/* Date and Time */}
         <View style={styles.dateTimeRow}>
-          <Text style={styles.dateText}>Voltage: {voltage}V</Text>
-          <Text style={styles.timeText}>Current: {current}A</Text>
-          <Text style={styles.timeText}>Power: {power}W</Text>
-          <Text style={styles.timeText}>Energy: {energy}kWh</Text>
+          <Text style={styles.dateText}>Monitor device: {cellphoneCnt}</Text>
+          <Text style={styles.timeText}>Alarm: {suspecious}</Text>
+          <Text style={styles.timeText}>TALKING: {talking}</Text>
+          <Text style={styles.timeText}>Date: {date}</Text>
+          <Text style={styles.timeText}>Time: {time}</Text>
         </View>
 
         <View style={styles.switchContainer}>
