@@ -8,6 +8,7 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
   Pressable,
 } from "react-native";
 import { Link, useRouter } from "expo-router";
@@ -23,6 +24,7 @@ const Index = () => {
   const [hideShow, setHideShow] = useState(true);
   const [wrongPass, setWrongPass] = useState(false);
   const [warnMessage, setWarnMessage] = useState("");
+  const [loading, setLoading] = useState(false); 
 
   const signIn = useAuthStore((state) => state.signIn);
 
@@ -44,12 +46,14 @@ const Index = () => {
       }
         const success = await signIn(email, password)
         console.log("Value of ",success)
+        setLoading(true);
         if(success)
           router.push("(tabs)");
         else
           setWarnMessage("Invalid email or password");
     } catch (error) {
       console.error("Error logging in:", error);
+      setLoading(false);
     }
   };
 
@@ -96,8 +100,15 @@ const Index = () => {
           </View>
           <View style={styles.signInWrapper}>
             <View style={styles.buttonContainer}>
-              <Pressable style={styles.buttons} onPress={handleCredentials}>
-                <Text style={styles.buttonTitle}>Login</Text>
+            <Pressable style={styles.buttons} onPress={handleCredentials} disabled={loading}>
+                {loading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#fff" />
+                    <Text style={styles.buttonTitle}>  Login</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.buttonTitle}>Login</Text>
+                )}
               </Pressable>
             </View>
           </View>
@@ -245,6 +256,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontFamily: "Gudea-Bold",
     color: "rgba(255, 255, 255, 1)",
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });
 
