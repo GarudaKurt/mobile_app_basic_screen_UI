@@ -11,13 +11,13 @@ import { getAuth, connectAuthEmulator } from "firebase/auth";
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCf_yEMzkxTZTZvhxnIUfZl3rlqdWRE9Yo",
-  authDomain: "iot-healthcare-72d91.firebaseapp.com",
-  databaseURL: "https://iot-healthcare-72d91-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "iot-healthcare-72d91",
-  storageBucket: "iot-healthcare-72d91.firebasestorage.app",
-  messagingSenderId: "471416816452",
-  appId: "1:471416816452:web:8e49d9695f3b8755044d11"
+  apiKey: "AIzaSyBbtSIieSDMrlBf6kOOoyGQ1u2zKUjAaDk",
+  authDomain: "smart-irrigation-79b37.firebaseapp.com",
+  databaseURL: "https://smart-irrigation-79b37-default-rtdb.firebaseio.com",
+  projectId: "smart-irrigation-79b37",
+  storageBucket: "smart-irrigation-79b37.firebasestorage.app",
+  messagingSenderId: "951804167298",
+  appId: "1:951804167298:web:2f436c32a8cda7256da09b"
 };
 
 

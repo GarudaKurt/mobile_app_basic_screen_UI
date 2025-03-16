@@ -20,17 +20,12 @@ import { v4 as uuidv4 } from "uuid";
 import "react-native-get-random-values";
 
 const  Home = () => {
-  const [cellphoneCnt, setcellphoneCnt] = useState("");
+  const [sensor1, setSensor1] = useState("");
+  const [sensor2, setSensor2] = useState("");
+  const [sensor3, setSensor3] = useState("");
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("")
-  const [noDetectcnt, setnodeDetectcnt] = useState("");
-  const [suspecious, setSuspecios] = useState("")
-  const [talking, setTalking] = useState("")
-  const [loading, setLoading] = useState(true);
-  const [isOn, setIsOn] = useState(false);
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const [loading, setLoading] = useState(false)
 
-  
 
   useEffect(() => {
     const dataRef = ref(database, "monitoring");
@@ -39,12 +34,10 @@ const  Home = () => {
     const unsubscribe = onValue(dataRef, async (snapshot) => {
       const fetchedData = snapshot.val();
       if (fetchedData) {
-        setcellphoneCnt(fetchedData.cellphoneCnt || "N/A");
-        setnodeDetectcnt(fetchedData.nodetectionCnt || "N/A")
-        setSuspecios(fetchedData.SUSPECIOUS || "N/A")
-        setTalking(fetchedData.talking || "N/A")
+        setSensor1(fetchedData.s1 || "N/A");
+        setSensor2(fetchedData.s2 || "N/A");
+        setSensor3(fetchedData.s3 || "N/A");
         setDate(fetchedData.date || "N/A");
-        setTime(fetchedData.time || "N/A")
       }
       if (fetchedData) {
         const user = auth.currentUser;
@@ -52,11 +45,10 @@ const  Home = () => {
           //console.error("Users detected!");
           //Alert.alert("hello! user");
           const sendData = {
-            cellphoneCnt: fetchedData.cellphoneCnt,
-            nodetection: fetchedData.nodetectionCnt,
-            talking: fetchedData.talikng,
-            date: fetchedData.date,
-            time:fetchedData.time
+            sensor1: fetchedData.s1,
+            sensor2: fetchedData.s2,
+            sensor3: fetchedData.s3,
+            date: fetchedData.date
           };
 
           try {
@@ -86,7 +78,7 @@ const  Home = () => {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [suspecious, noDetectcnt, cellphoneCnt, talking, time, date]); // Adding these dependencies ensures that the effect runs when any of them change
+  }, [sensor1, sensor2, sensor3, date]); // Adding these dependencies ensures that the effect runs when any of them change
 
   if (loading) {
     return (
@@ -96,32 +88,13 @@ const  Home = () => {
     );
   }
 
-  const toggleSwitch = () => {
-    setIsOn((prev) => {
-      const newState = !prev;
-  
-      // Update the value in Firebase Realtime Database
-      const stateRef = ref(database, "monitoring/state");
-      set(stateRef, newState)
-        .then(() => console.log("State updated successfully"))
-        .catch((error) => console.error("Error updating state:", error));
-  
-      Animated.timing(slideAnim, {
-        toValue: newState ? 30 : 0,
-        duration: 200,
-        useNativeDriver: false,
-      }).start();
-  
-      return newState;
-    });
-  };
 
   return (
     <View style={styles.container}>
       <View style={styles.cardContainer}>
         {/* Gas Level Info */}
         <View style={styles.gasLevelRow}>
-          <Text style={styles.labelText}>ANTI CHEATING</Text>
+          <Text style={styles.labelText}>IRRGATIONS</Text>
           <View style={styles.indicator}>
             <Ionicons name="information-circle" size={24} color="#4A4A4A" />
           </View>
@@ -129,19 +102,12 @@ const  Home = () => {
 
         {/* Date and Time */}
         <View style={styles.dateTimeRow}>
-          <Text style={styles.dateText}>Monitor device: {cellphoneCnt}</Text>
-          <Text style={styles.timeText}>Alarm: {suspecious}</Text>
-          <Text style={styles.timeText}>TALKING: {talking}</Text>
+          <Text style={styles.dateText}>Sensor 1: {sensor1}</Text>
+          <Text style={styles.timeText}>Sensor 2: {sensor2}</Text>
+          <Text style={styles.timeText}>Sensor 3: {sensor3}</Text>
           <Text style={styles.timeText}>Date: {date}</Text>
-          <Text style={styles.timeText}>Time: {time}</Text>
         </View>
 
-        <View style={styles.switchContainer}>
-          <Text style={styles.statusLabel}>{isOn ? "ON" : "OFF"}</Text>
-          <TouchableOpacity style={styles.switch} onPress={toggleSwitch}>
-            <Animated.View style={[styles.slider, { left: slideAnim }]} />
-          </TouchableOpacity>
-        </View>
       </View>
     </View>
   );
