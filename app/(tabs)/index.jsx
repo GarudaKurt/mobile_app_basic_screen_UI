@@ -1,9 +1,9 @@
 
-import { useState, useEffect } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from "react-native";
+import { useState, useEffect, useRef } from "react";
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { database, firestore, auth } from "../config/firebaseConfig";
-import { ref, onValue } from "firebase/database";
+import { ref, set, onValue } from "firebase/database";
 
 import {
   doc,
@@ -13,50 +13,71 @@ import {
   getDocs,
   query,
   addDoc,
+  updateDoc,
+  where,
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import "react-native-get-random-values";
 
 const  Home = () => {
-  const [gasValue, setGasValue] = useState(null);
+  const [cellphoneCnt, setcellphoneCnt] = useState("");
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [warnData, setWarnData] = useState([]);
+  const [time, setTime] = useState("")
+  const [noDetectcnt, setnodeDetectcnt] = useState("");
+  const [suspecious, setSuspecios] = useState("")
+  const [talking, setTalking] = useState("")
   const [loading, setLoading] = useState(true);
+  const [isOn, setIsOn] = useState(false);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  
 
   useEffect(() => {
-    const dataRef = ref(database, "data");
+    const dataRef = ref(database, "monitoring");
 
     // Fetch data
     const unsubscribe = onValue(dataRef, async (snapshot) => {
       const fetchedData = snapshot.val();
       if (fetchedData) {
-        setGasValue(fetchedData.gasValue || 0);
+        setcellphoneCnt(fetchedData.cellphoneCnt || "N/A");
+        setnodeDetectcnt(fetchedData.nodetectionCnt || "N/A")
+        setSuspecios(fetchedData.SUSPECIOUS || "N/A")
+        setTalking(fetchedData.talking || "N/A")
         setDate(fetchedData.date || "N/A");
-        setTime(fetchedData.time || "N/A");
+        setTime(fetchedData.time || "N/A")
       }
-      if (fetchedData && fetchedData.gasValue > 200) {
-        // Only store data if gas value is over 200
+      if (fetchedData) {
         const user = auth.currentUser;
         if (user) {
           //console.error("Users detected!");
           //Alert.alert("hello! user");
           const sendData = {
-            gasValues: fetchedData.gasValue,
+            cellphoneCnt: fetchedData.cellphoneCnt,
+            nodetection: fetchedData.nodetectionCnt,
+            talking: fetchedData.talikng,
             date: fetchedData.date,
-            time: fetchedData.time,
+            time:fetchedData.time
           };
 
           try {
-            const documentId = uuidv4();
-            // Reference to a specific document in the monitoring collection
-            const userMonitoringDocRef = doc(firestore, "users", user.uid, "monitoring", documentId);
-
-            // Store the data in Firestore
-            await setDoc(userMonitoringDocRef, sendData);
-            console.log("Data saved successfully to Firestore!");
+            const userMonitoringCollectionRef = collection(firestore, "users", user.uid, "monitoring");
+  
+            const q = query(userMonitoringCollectionRef, where("date", "==", fetchedData.date));
+            const querySnapshot = await getDocs(q);
+  
+            if (!querySnapshot.empty) {
+              // If a document exists for today, update it
+              const existingDoc = querySnapshot.docs[0]; 
+              await updateDoc(doc(firestore, "users", user.uid, "monitoring", existingDoc.id), sendData);
+              console.log("Data updated successfully in Firestore!");
+            } else {
+              // If no document exists for today, create a new one
+              const newDocRef = doc(userMonitoringCollectionRef, uuidv4());
+              await setDoc(newDocRef, sendData);
+              console.log("New data saved successfully to Firestore!");
+            }
           } catch (error) {
-            console.error("Error saving data to Firestore:", error);
+            console.error("Error saving/updating data to Firestore:", error);
           }
         }
       }
@@ -65,7 +86,7 @@ const  Home = () => {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [gasValue, date, time]); // Adding these dependencies ensures that the effect runs when any of them change
+  }, [suspecious, noDetectcnt, cellphoneCnt, talking, time, date]); // Adding these dependencies ensures that the effect runs when any of them change
 
   if (loading) {
     return (
@@ -75,13 +96,32 @@ const  Home = () => {
     );
   }
 
+  const toggleSwitch = () => {
+    setIsOn((prev) => {
+      const newState = !prev;
+  
+      // Update the value in Firebase Realtime Database
+      const stateRef = ref(database, "monitoring/state");
+      set(stateRef, newState)
+        .then(() => console.log("State updated successfully"))
+        .catch((error) => console.error("Error updating state:", error));
+  
+      Animated.timing(slideAnim, {
+        toValue: newState ? 30 : 0,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+  
+      return newState;
+    });
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.cardContainer}>
         {/* Gas Level Info */}
         <View style={styles.gasLevelRow}>
-          <Text style={styles.labelText}>GAS LEVEL:</Text>
-          <Text style={styles.gasValue}>{gasValue}</Text>
+          <Text style={styles.labelText}>ANTI CHEATING</Text>
           <View style={styles.indicator}>
             <Ionicons name="information-circle" size={24} color="#4A4A4A" />
           </View>
@@ -89,21 +129,19 @@ const  Home = () => {
 
         {/* Date and Time */}
         <View style={styles.dateTimeRow}>
-          <Text style={styles.dateText}>Date: {date}</Text>
+          <Text style={styles.dateText}>Monitor device: {cellphoneCnt}</Text>
+          <Text style={styles.timeText}>Alarm: {suspecious}</Text>
+          <Text style={styles.timeText}>TALKING: {talking}</Text>
+          <Text style={styles.timeText}>Date: {date}</Text>
           <Text style={styles.timeText}>Time: {time}</Text>
         </View>
 
-        {/* Status Button */}
-        <TouchableOpacity
-          style={[
-            styles.statusButton,
-            { backgroundColor: gasValue > 100 ? "#f39c12" : "#28a745" },
-          ]}
-        >
-          <Text style={styles.statusText}>
-            {gasValue > 100 ? "WARNING" : "NORMAL"}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.switchContainer}>
+          <Text style={styles.statusLabel}>{isOn ? "ON" : "OFF"}</Text>
+          <TouchableOpacity style={styles.switch} onPress={toggleSwitch}>
+            <Animated.View style={[styles.slider, { left: slideAnim }]} />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -134,7 +172,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   labelText: {
-    fontSize: 16,
+    fontSize: 24,
     color: "#4A4A4A",
     fontWeight: "bold",
   },
@@ -171,6 +209,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#fff",
+  },
+  switchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 20,
+  },
+  statusLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  switch: {
+    width: 60,
+    height: 30,
+    backgroundColor: "#ddd",
+    borderRadius: 30,
+    padding: 3,
+    justifyContent: "center",
+  },
+  slider: {
+    width: 28,
+    height: 28,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    position: "absolute",
+    top: 1,
   },
 });
 
