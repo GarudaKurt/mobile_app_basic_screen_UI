@@ -1,113 +1,75 @@
-
 import { useState, useEffect } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { database, firestore, auth } from "../config/firebaseConfig";
-import { ref, onValue } from "firebase/database";
-
 import {
-  doc,
-  setDoc,
-  collection,
-  getDoc,
-  getDocs,
-  query,
-  addDoc,
-} from "firebase/firestore";
-import { v4 as uuidv4 } from "uuid";
-import "react-native-get-random-values";
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Alert,
+  Dimensions,
+} from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { Ionicons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 
-const  Home = () => {
-  const [gasValue, setGasValue] = useState(null);
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [warnData, setWarnData] = useState([]);
-  const [loading, setLoading] = useState(true);
+const Home = () => {
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanned, setScanned] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
 
   useEffect(() => {
-    const dataRef = ref(database, "data");
+    if (permission && permission.status === "denied") {
+      Alert.alert(
+        "Camera Permission Required",
+        "Please enable camera access in settings.",
+        [
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+          { text: "Retry", onPress: requestPermission },
+          { text: "Cancel", style: "cancel" },
+        ]
+      );
+    }
+  }, [permission]);
 
-    // Fetch data
-    const unsubscribe = onValue(dataRef, async (snapshot) => {
-      const fetchedData = snapshot.val();
-      if (fetchedData) {
-        setGasValue(fetchedData.gasValue || 0);
-        setDate(fetchedData.date || "N/A");
-        setTime(fetchedData.time || "N/A");
-      }
-      if (fetchedData && fetchedData.gasValue > 200) {
-        // Only store data if gas value is over 200
-        const user = auth.currentUser;
-        if (user) {
-          //console.error("Users detected!");
-          //Alert.alert("hello! user");
-          const sendData = {
-            gasValues: fetchedData.gasValue,
-            date: fetchedData.date,
-            time: fetchedData.time,
-          };
-
-          try {
-            const documentId = uuidv4();
-            // Reference to a specific document in the monitoring collection
-            const userMonitoringDocRef = doc(firestore, "users", user.uid, "monitoring", documentId);
-
-            // Store the data in Firestore
-            await setDoc(userMonitoringDocRef, sendData);
-            console.log("Data saved successfully to Firestore!");
-          } catch (error) {
-            console.error("Error saving data to Firestore:", error);
-          }
-        }
-      }
-      setLoading(false);
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, [gasValue, date, time]); // Adding these dependencies ensures that the effect runs when any of them change
-
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
+  const handleBarCodeScanned = ({ data }) => {
+    setScanned(true);
+    Alert.alert("QR Code Scanned", `Data: ${data}`, [
+      { text: "OK", onPress: () => setScanned(false) },
+    ]);
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.cardContainer}>
-        {/* Gas Level Info */}
-        <View style={styles.gasLevelRow}>
-          <Text style={styles.labelText}>GAS LEVEL:</Text>
-          <Text style={styles.gasValue}>{gasValue}</Text>
-          <View style={styles.indicator}>
-            <Ionicons name="information-circle" size={24} color="#4A4A4A" />
-          </View>
-        </View>
+      <TouchableOpacity
+        style={styles.scanButton}
+        onPress={() => {
+          if (permission && permission.status === "granted") {
+            setIsScanning(true);
+          } else {
+            requestPermission();
+          }
+        }}
+      >
+        <Ionicons name="scan" size={28} color="white" />
+        <Text style={styles.scanButtonText}>Scan QR Code</Text>
+      </TouchableOpacity>
 
-        {/* Date and Time */}
-        <View style={styles.dateTimeRow}>
-          <Text style={styles.dateText}>Date: {date}</Text>
-          <Text style={styles.timeText}>Time: {time}</Text>
+      {isScanning && permission?.status === "granted" && (
+        <View style={styles.cameraContainer}>
+          <CameraView
+            onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+            style={styles.camera}
+          />
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setIsScanning(false)}
+          >
+            <Ionicons name="close" size={32} color="white" />
+          </TouchableOpacity>
         </View>
-
-        {/* Status Button */}
-        <TouchableOpacity
-          style={[
-            styles.statusButton,
-            { backgroundColor: gasValue > 100 ? "#f39c12" : "#28a745" },
-          ]}
-        >
-          <Text style={styles.statusText}>
-            {gasValue > 100 ? "WARNING" : "NORMAL"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      )}
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -116,62 +78,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#f3f3f3",
   },
-  cardContainer: {
-    width: "90%",
-    backgroundColor: "#fff",
-    borderRadius: 15,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    alignSelf: "center",
-  },
-  gasLevelRow: {
+  scanButton: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 15,
-  },
-  labelText: {
-    fontSize: 16,
-    color: "#4A4A4A",
-    fontWeight: "bold",
-  },
-  gasValue: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  indicator: {
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderRadius: 5,
-    borderColor: "#4A4A4A",
-  },
-  dateTimeRow: {
-    marginBottom: 15,
-  },
-  dateText: {
-    fontSize: 16,
-    color: "#4A4A4A",
-    marginBottom: 5,
-  },
-  timeText: {
-    fontSize: 16,
-    color: "#4A4A4A",
-  },
-  statusButton: {
-    paddingVertical: 10,
+    backgroundColor: "#007bff",
+    padding: 12,
     borderRadius: 25,
     alignItems: "center",
+    marginTop: 20,
   },
-  statusText: {
+  scanButtonText: {
+    color: "white",
     fontSize: 16,
     fontWeight: "bold",
-    color: "#fff",
+    marginLeft: 10,
+  },
+  cameraContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.8)",
+  },
+  camera: {
+    width: Dimensions.get("window").width * 0.9,
+    height: Dimensions.get("window").height * 0.6,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 40,
+    right: 20,
   },
 });
 
-export default Home
+export default Home;
