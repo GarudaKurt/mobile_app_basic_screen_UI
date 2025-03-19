@@ -27,7 +27,7 @@ const Profile = () => {
     const success = await logOut();
     console.log("Logout success:", success);
     if (success) {
-      router.push("/"); // Navigate to the root `index.jsx`
+      router.push("/register"); // Navigate to the root `index.jsx`
     } else {
       console.log("Logout failed");
     }
