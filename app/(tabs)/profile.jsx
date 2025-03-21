@@ -12,6 +12,8 @@ import {
 import { Avatar, Button, Icon, Card } from "@rneui/themed";
 import { Link, router, useRouter } from "expo-router";
 import { useAuthStore } from "../zustand/zustand";
+import { ref, set, onValue } from "firebase/database";
+import { database, firestore, auth } from "../config/firebaseConfig";
 
 
 const CustomListItem = ({ icon, title, onPress }) => (
@@ -26,7 +28,7 @@ const Profile = () => {
   const [userName, setUserName] = useState("John Doe");
   const [newbalance, setnewBalance] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
-
+  const [currentBalance, setcurrentBalance] = useState(0)
   const router = useRouter()
   const logOut = useAuthStore((state) => state.logOut);
   const balance = useAuthStore((state) => state.balance);
@@ -45,10 +47,31 @@ const Profile = () => {
 
   
   const handleCashIn = () => {
-    console.log("New Balance: ", newbalance);
-    setBalances(balance + newbalance); // Add the new amount to the current balance
+    const amountToAdd = Number(newbalance); // Ensure it's a number
+    if (isNaN(amountToAdd) || amountToAdd <= 0) {
+      console.log("Invalid balance input");
+      return;
+    }
+  
+    //const updatedBalance = balance + amountToAdd; // Add new amount to the existing balance
+    //setBalances(updatedBalance); // Update state and AsyncStorage
+    const dataRef = ref(database, "data");
+    const unsubscribe = onValue(dataRef, async (snapshot) => {
+      const fetchedData = snapshot.val();
+      if (fetchedData) {
+        setcurrentBalance(fetchedData.balance || 0)
+      }
+    });
+    const updatedBalance = currentBalance + amountToAdd;
+    // Update Firebase Realtime Database
+    const stateRef = ref(database, "data/balance");
+    set(stateRef, updatedBalance)
+      .then(() => console.log("Balance updated successfully in Firebase"))
+      .catch((error) => console.error("Error updating balance in Firebase:", error));
+  
     setModalVisible(false);
-    setnewBalance(0); // Reset input after submission
+    setnewBalance(""); // Reset input after submission
+    return () => unsubscribe();
   };
   
   

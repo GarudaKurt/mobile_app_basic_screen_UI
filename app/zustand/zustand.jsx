@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth, firestore } from '../config/firebaseConfig';
+import { database, firestore, auth } from "../config/firebaseConfig";
 import { doc, setDoc } from 'firebase/firestore';
+import { ref, set, onValue } from "firebase/database";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 
 // Zustand store with Firebase authentication and AsyncStorage persistence
@@ -29,14 +30,28 @@ export const useAuthStore = create((set) => {
     },
 
     // Set balance and persist to storage
-    setBalances: async (newBalance) => {
-      set({ balance: newBalance });
-      try {
-        await AsyncStorage.setItem('balance', JSON.stringify(newBalance));
-      } catch (error) {
-        console.error('Failed to save balance:', error.message);
-      }
+    setBalances: async (addedBalance) => {
+      set((state) => {
+        const updatedBalance = state.balance + addedBalance;
+    
+        try {
+          // Update Firebase Realtime Database
+          const userBalanceRef = ref(database, "data/balance");
+          set(userBalanceRef, updatedBalance)
+            .then(() => console.log("Balance updated successfully in Firebase"))
+            .catch((error) => console.error("Error updating balance in Firebase:", error));
+    
+          // Save balance locally
+          AsyncStorage.setItem('balance', JSON.stringify(updatedBalance));
+    
+          return { balance: updatedBalance };
+        } catch (error) {
+          console.error('Failed to save balance:', error.message);
+          return state;
+        }
+      });
     },
+    
 
     clearUser: async () => {
       set({ user: null, balance: 0 });
@@ -59,6 +74,10 @@ export const useAuthStore = create((set) => {
         const storedBalance = await AsyncStorage.getItem('balance');
         if (storedBalance !== null) {
           set({ balance: JSON.parse(storedBalance) });
+          const stateRef = ref(database, "data/balance");
+          set(stateRef, newState)
+            .then(() => console.log("State updated successfully"))
+            .catch((error) => console.error("Error updating state:", error));
         }
       } catch (error) {
         console.error('Failed to initialize user from storage:', error.message);

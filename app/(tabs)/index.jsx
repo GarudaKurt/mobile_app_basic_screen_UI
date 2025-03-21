@@ -5,34 +5,22 @@ import {
   View,
   TouchableOpacity,
   Alert,
-  Dimensions,
   ScrollView
 } from "react-native";
 import { Camera, CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
-import { useAuthStore } from "../zustand/zustand";
-import { database, firestore, auth } from "../config/firebaseConfig";
-import { ref, onValue } from "firebase/database";
-
-import {
-  doc,
-  setDoc,
-  collection,
-  getDoc,
-  getDocs,
-  query,
-  addDoc,
-} from "firebase/firestore";
-import { v4 as uuidv4 } from "uuid";
+import { database } from "../config/firebaseConfig";
+import { ref, onValue, set, push } from "firebase/database";
 
 const Home = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
-  const [currentBalance, setcurrentBalance] = useState(0)
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [payment, setPayment] = useState(0);
+  const [history, setHistory] = useState([]);
 
-  const balance = useAuthStore((state) => state.balance);
   useEffect(() => {
     if (permission && permission.status === "denied") {
       Alert.alert(
@@ -47,29 +35,58 @@ const Home = () => {
     }
   }, [permission]);
 
-  const handleBarCodeScanned = ({ data }) => {
-    setScanned(true);
-    Alert.alert("QR Code Scanned", `Data: ${data}`, [
-      { text: "OK", onPress: () => setScanned(false) },
-    ]);
-  };
-
+  // Fetch balance and history from Firebase
   useEffect(() => {
     const dataRef = ref(database, "data");
-    if(balance !== 0) {
-      setcurrentBalance(balance)
-    } else {
-      // Fetch data
-      const unsubscribe = onValue(dataRef, async (snapshot) => {
-        const fetchedData = snapshot.val();
-        if (fetchedData) {
-          setcurrentBalance(fetchedData.balance || 0)
-        }
-      });
-      return () => unsubscribe();
-    }
-  }, [balance]);
+    const unsubscribe = onValue(dataRef, (snapshot) => {
+      const fetchedData = snapshot.val();
+      if (fetchedData) {
+        setCurrentBalance(fetchedData.balance || 0);
+        const fetchedHistory = fetchedData.history ? Object.values(fetchedData.history).reverse() : [];
+        setHistory(fetchedHistory);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
+  // Handle QR scan
+  const handleBarCodeScanned = ({ data }) => {
+    if (scanned) return; // Prevent double scan trigger
+    setScanned(true);
+  
+    const parsedPayment = parseFloat(data);
+    if (isNaN(parsedPayment) || parsedPayment <= 0) {
+      Alert.alert("Invalid Payment", "QR code data is not a valid payment amount.");
+    } else {
+      setPayment(parsedPayment);
+      Alert.alert("QR Code Scanned", `Payment: ₱${parsedPayment}`);
+    }
+  
+    // Reset scan state after a short delay
+    setTimeout(() => setScanned(false), 1500);
+  };
+  
+
+  // Deduct payment and update Firebase
+  useEffect(() => {
+    if (payment > 0 && currentBalance >= payment) {
+      const newBalance = currentBalance - payment;
+      setCurrentBalance(newBalance);
+      set(ref(database, "data/balance"), newBalance);
+      
+      const historyRef = ref(database, "data/history");
+      const newTransaction = { type: "Bank Transfer", amount: -payment, date: new Date().toISOString() };
+      push(historyRef, newTransaction);
+
+      setHistory((prevHistory) => [newTransaction, ...prevHistory]);
+
+      Alert.alert("Payment Successful", `₱${payment} deducted from your balance.`);
+      setPayment(0);
+    } else if (payment > 0 && currentBalance < payment) {
+      Alert.alert("Insufficient Funds", "Your balance is too low for this payment.");
+      setPayment(0);
+    }
+  }, [payment]);
 
   return (
     <ScrollView style={styles.container}>
@@ -97,27 +114,19 @@ const Home = () => {
         </View>
       </View>
 
-      <View style={styles.infoRow}>
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Monthly Expenses</Text>
-          <Text style={styles.infoAmount}>₱2891.12</Text>
-        </View>
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Weekly Spending</Text>
-          <Text style={styles.infoAmount}>₱276.95</Text>
-        </View>
-    
-      </View>
-
       <Text style={styles.sectionTitle}>Recent Activity</Text>
-      <View style={styles.activityCard}>
-        <Text style={styles.activityText}>Money Received</Text>
-        <Text style={styles.activityAmountPositive}>+526.00</Text>
-      </View>
-      <View style={styles.activityCard}>
-        <Text style={styles.activityText}>Bank Transfer</Text>
-        <Text style={styles.activityAmountNegative}>-19.33</Text>
-      </View>
+      {history.length > 0 ? (
+        history.map((activity, index) => (
+          <View key={index} style={styles.activityCard}>
+            <Text style={styles.activityText}>{activity.type}</Text>
+            <Text style={activity.amount > 0 ? styles.activityAmountPositive : styles.activityAmountNegative}>
+              {activity.amount > 0 ? "+" : "-"}₱{Math.abs(activity.amount)}
+            </Text>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.noActivityText}>No recent activity</Text>
+      )}
 
       {isScanning && permission?.status === "granted" && (
         <View style={styles.cameraContainer}>
@@ -143,13 +152,7 @@ const styles = StyleSheet.create({
   balanceText: { color: "#fff", fontSize: 18 },
   amountText: { color: "#fff", fontSize: 32, fontWeight: "bold", marginVertical: 10 },
   actionButtons: { flexDirection: "row", justifyContent: "space-around", width: "100%", marginTop: 10 },
-  actionButton: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", padding: 10, borderRadius: 10, width: "45%", justifyContent: "center" },
   actionText: { color: "#007bff", fontWeight: "bold", marginLeft: 5 },
-  infoRow: { flexDirection: "row", justifyContent: "space-around", marginVertical: 10 },
-  infoCard: { backgroundColor: "#fff", padding: 15, borderRadius: 10, width: "45%", alignItems: "center" },
-  infoCardFull: { backgroundColor: "#fff", padding: 15, borderRadius: 10, width: "92%", alignItems: "center", marginTop: 10 },
-  infoTitle: { color: "#888" },
-  infoAmount: { fontWeight: "bold", fontSize: 18 },
   sectionTitle: { marginLeft: 20, fontSize: 18, fontWeight: "bold", marginTop: 10 },
   activityCard: { backgroundColor: "#fff", padding: 15, borderRadius: 10, marginHorizontal: 20, marginTop: 5, flexDirection: "row", justifyContent: "space-between" },
   activityText: { color: "#555" },
@@ -157,7 +160,10 @@ const styles = StyleSheet.create({
   activityAmountNegative: { color: "#F44336", fontWeight: "bold" },
   cameraContainer: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.8)" },
   centeredCamera: { width: 300, height: 300, justifyContent: "center", alignItems: "center" },
-  closeButton: { position: "absolute", top: 40, right: 20 }
+  actionButtons: { flexDirection: "row", justifyContent: "space-around", width: "100%", marginTop: 10 },
+  actionButton: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", padding: 10, borderRadius: 10, width: "45%", justifyContent: "center" },
+  actionText: { color: "#007bff", fontWeight: "bold", marginLeft: 5 },
+  sectionTitle: { marginLeft: 20, fontSize: 18, fontWeight: "bold", marginTop: 10 },
 });
 
 export default Home;
