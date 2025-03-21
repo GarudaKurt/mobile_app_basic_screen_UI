@@ -5,24 +5,34 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
+  TextInput,
+  Modal,
+  Pressable
 } from "react-native";
 import { Avatar, Button, Icon, Card } from "@rneui/themed";
 import { Link, router, useRouter } from "expo-router";
 import { useAuthStore } from "../zustand/zustand";
 
-const CustomListItem = ({ icon, title }) => (
-  <TouchableOpacity style={style.listItem}>
+
+const CustomListItem = ({ icon, title, onPress }) => (
+  <TouchableOpacity style={style.listItem} onPress={onPress}>
     <Icon name={icon} type="material" style={style.iconContainer} />
     <Text style={style.listItemTitle}>{title}</Text>
   </TouchableOpacity>
 );
 
+
 const Profile = () => {
   const [userName, setUserName] = useState("John Doe");
+  const [newbalance, setnewBalance] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const router = useRouter()
   const logOut = useAuthStore((state) => state.logOut);
+  const balance = useAuthStore((state) => state.balance);
+  const setBalances = useAuthStore((state) => state.setBalances);
 
+  
   const handleLogout = async () => {
     const success = await logOut();
     console.log("Logout success:", success);
@@ -32,6 +42,15 @@ const Profile = () => {
       console.log("Logout failed");
     }
   };
+
+  
+  const handleCashIn = () => {
+    console.log("New Balance: ", newbalance);
+    setBalances(balance + newbalance); // Add the new amount to the current balance
+    setModalVisible(false);
+    setnewBalance(0); // Reset input after submission
+  };
+  
   
 
   return (
@@ -51,11 +70,13 @@ const Profile = () => {
 
       <View style={style.infoContainer}>
         <Link href="/userDetails" asChild>
-          <CustomListItem icon="shopping-cart" title="Add Product" />
+        <CustomListItem icon="settings" title="Settings" />
         </Link>
-        <Link href="/billing-details" asChild>
-          <CustomListItem icon="inventory" title="Inventory" />
-        </Link>
+        <CustomListItem
+          icon="credit-card"
+          title="Cash In"
+          onPress={() => setModalVisible(true)}
+        />
         <Link href="/friendList" asChild>
           <CustomListItem icon="bar-chart" title="Reports" />
         </Link>
@@ -66,6 +87,35 @@ const Profile = () => {
         buttonStyle={style.logoutButton}
         onPress={handleLogout}
       />
+       <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={style.modalOverlay}>
+          <View style={style.modalView}>
+            <Text style={style.modalTitle}>Add New Balance</Text>
+            <TextInput
+              style={style.input}
+              placeholder="Enter amount"
+              keyboardType="numeric"
+              value={String(newbalance)} // Ensure it's a string for the input
+              onChangeText={(text) => setnewBalance(Number(text))} // Properly update the state
+            />
+
+            <Pressable style={style.modalButton} onPress={handleCashIn}>
+              <Text style={style.buttonTextSubmit}>Submit</Text>
+            </Pressable>
+            <Pressable
+              style={[style.modalButton, style.cancelButton]}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={style.buttonTextCancel}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -133,6 +183,57 @@ const style = StyleSheet.create({
     backgroundColor: "#FF3B30",
     borderRadius: 3,
     marginBottom: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalView: {
+    width: "80%",
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 15,
+  },
+  input: {
+    width: "100%",
+    height: 40,
+    borderColor: "#ddd",
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 15,
+    paddingLeft: 10,
+  },
+  modalButton: {
+    backgroundColor: "#00BEE5",
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+    width: "100%",
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#F3F3F3",
+  },
+  buttonTextSubmit: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  buttonTextCancel: {
+    color: "#2C2C2C",
+    fontWeight: "bold",
   },
 });
 

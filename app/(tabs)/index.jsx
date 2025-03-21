@@ -11,12 +11,13 @@ import {
 import { Camera, CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
+import { useAuthStore } from "../zustand/zustand";
 
 const Home = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
-
+  const balance = useAuthStore((state) => state.balance);
   useEffect(() => {
     if (permission && permission.status === "denied") {
       Alert.alert(
@@ -42,7 +43,7 @@ const Home = () => {
     <ScrollView style={styles.container}>
       <View style={styles.balanceCard}>
         <Text style={styles.balanceText}>Balance</Text>
-        <Text style={styles.amountText}>₱14,518.09</Text>
+        <Text style={styles.amountText}>₱{balance}</Text>
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.actionButton}>
             <Ionicons name="swap-horizontal" size={24} color="#007bff" />
