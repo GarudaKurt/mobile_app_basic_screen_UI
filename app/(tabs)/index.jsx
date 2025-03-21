@@ -12,11 +12,26 @@ import { Camera, CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
 import { useAuthStore } from "../zustand/zustand";
+import { database, firestore, auth } from "../config/firebaseConfig";
+import { ref, onValue } from "firebase/database";
+
+import {
+  doc,
+  setDoc,
+  collection,
+  getDoc,
+  getDocs,
+  query,
+  addDoc,
+} from "firebase/firestore";
+import { v4 as uuidv4 } from "uuid";
 
 const Home = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+  const [currentBalance, setcurrentBalance] = useState(0)
+
   const balance = useAuthStore((state) => state.balance);
   useEffect(() => {
     if (permission && permission.status === "denied") {
@@ -39,11 +54,28 @@ const Home = () => {
     ]);
   };
 
+  useEffect(() => {
+    const dataRef = ref(database, "data");
+    if(balance !== 0) {
+      setcurrentBalance(balance)
+    } else {
+      // Fetch data
+      const unsubscribe = onValue(dataRef, async (snapshot) => {
+        const fetchedData = snapshot.val();
+        if (fetchedData) {
+          setcurrentBalance(fetchedData.balance || 0)
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [balance]);
+
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.balanceCard}>
         <Text style={styles.balanceText}>Balance</Text>
-        <Text style={styles.amountText}>₱{balance}</Text>
+        <Text style={styles.amountText}>₱{currentBalance}</Text>
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.actionButton}>
             <Ionicons name="swap-horizontal" size={24} color="#007bff" />
