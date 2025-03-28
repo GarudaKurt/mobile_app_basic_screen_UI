@@ -19,6 +19,7 @@ const Home = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [currentBalance, setCurrentBalance] = useState(0);
   const [payment, setPayment] = useState(0);
+  const [settle, setSettle] = useState(0)
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
@@ -49,6 +50,20 @@ const Home = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const dataRef = ref(database, "data");
+    const unsubscribe = onValue(dataRef, (snapshot) => {
+      const fetchedData = snapshot.val();
+      if (fetchedData) {
+        setCurrentBalance(fetchedData.balance || 0);
+        setSettle(fetchedData.productTotal || 0)
+        const fetchedHistory = fetchedData.history ? Object.values(fetchedData.history).reverse() : [];
+        setHistory(fetchedHistory);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Handle QR scan
   const handleBarCodeScanned = ({ data }) => {
     if (scanned) return; // Prevent double scan trigger
@@ -58,8 +73,17 @@ const Home = () => {
     if (isNaN(parsedPayment) || parsedPayment <= 0) {
       Alert.alert("Invalid Payment", "QR code data is not a valid payment amount.");
     } else {
-      setPayment(parsedPayment);
-      Alert.alert("QR Code Scanned", `Payment: ₱${parsedPayment}`);
+      if(parsedPayment < settle) {
+        Alert.alert("Opps! Payment to short", `Payment: ₱${parsedPayment}`);
+      } else {
+        Alert.alert("Settled", `Payment: ₱${parsedPayment}`);
+        setPayment(parsedPayment);
+         // Update the value in Firebase Realtime Database
+        const stateRef = ref(database, "data/paidSettled");
+        set(stateRef, true)
+          .then(() => console.log("State updated successfully"))
+          .catch((error) => console.error("Error updating state:", error));
+      }
     }
   
     // Reset scan state after a short delay
