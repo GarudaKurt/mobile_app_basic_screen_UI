@@ -13,12 +13,13 @@ import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCkQQUn9G-IpF43pe5XBmqwYmswYjFMYbE",
-  authDomain: "anti-cheating-ai.firebaseapp.com",
-  projectId: "anti-cheating-ai",
-  storageBucket: "anti-cheating-ai.firebasestorage.app",
-  messagingSenderId: "1010480110510",
-  appId: "1:1010480110510:web:678b36babb807ed4cb063f"
+  apiKey: "AIzaSyBjhAuT0ozWZRXIEYXg3x97f6vAHJaKU5c",
+  authDomain: "ucb-smart-irrigation.firebaseapp.com",
+  databaseURL: "https://ucb-smart-irrigation-default-rtdb.firebaseio.com",
+  projectId: "ucb-smart-irrigation",
+  storageBucket: "ucb-smart-irrigation.firebasestorage.app",
+  messagingSenderId: "644840671203",
+  appId: "1:644840671203:web:c53dcecef7fa4d9e1682d6"
 };
 
 const app = initializeApp(firebaseConfig);

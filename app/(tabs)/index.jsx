@@ -20,12 +20,9 @@ import { v4 as uuidv4 } from "uuid";
 import "react-native-get-random-values";
 
 const  Home = () => {
-  const [cellphoneCnt, setcellphoneCnt] = useState("");
+  const [count, setCount] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("")
-  const [noDetectcnt, setnodeDetectcnt] = useState("");
-  const [suspecious, setSuspecios] = useState("")
-  const [talking, setTalking] = useState("")
   const [loading, setLoading] = useState(true);
   const [isOn, setIsOn] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -38,55 +35,26 @@ const  Home = () => {
     // Fetch data
     const unsubscribe = onValue(dataRef, async (snapshot) => {
       const fetchedData = snapshot.val();
-      if (fetchedData) {
-        setcellphoneCnt(fetchedData.cellphoneCnt || "N/A");
-        setnodeDetectcnt(fetchedData.nodetectionCnt || "N/A")
-        setSuspecios(fetchedData.SUSPECIOUS || "N/A")
-        setTalking(fetchedData.talking || "N/A")
-        setDate(fetchedData.date || "N/A");
-        setTime(fetchedData.time || "N/A")
-      }
-      if (fetchedData) {
-        const user = auth.currentUser;
-        if (user) {
-          //console.error("Users detected!");
-          //Alert.alert("hello! user");
-          const sendData = {
-            cellphoneCnt: fetchedData.cellphoneCnt,
-            nodetection: fetchedData.nodetectionCnt,
-            talking: fetchedData.talikng,
-            date: fetchedData.date,
-            time:fetchedData.time
-          };
+      const now = new Date();
 
-          try {
-            const userMonitoringCollectionRef = collection(firestore, "users", user.uid, "monitoring");
-  
-            const q = query(userMonitoringCollectionRef, where("date", "==", fetchedData.date));
-            const querySnapshot = await getDocs(q);
-  
-            if (!querySnapshot.empty) {
-              // If a document exists for today, update it
-              const existingDoc = querySnapshot.docs[0]; 
-              await updateDoc(doc(firestore, "users", user.uid, "monitoring", existingDoc.id), sendData);
-              console.log("Data updated successfully in Firestore!");
-            } else {
-              // If no document exists for today, create a new one
-              const newDocRef = doc(userMonitoringCollectionRef, uuidv4());
-              await setDoc(newDocRef, sendData);
-              console.log("New data saved successfully to Firestore!");
-            }
-          } catch (error) {
-            console.error("Error saving/updating data to Firestore:", error);
-          }
-        }
+      // Format date: YYYY-MM-DD
+      const date = now.toISOString().split('T')[0];
+
+      // Format time: HH:MM:SS
+      const time = now.toTimeString().split(' ')[0];
+
+      if (fetchedData) {
+        setCount(fetchedData.Count?.value ?? fetchedData.Count ?? "N/A");
+        setDate(date);
+        setTime(time);
+
       }
       setLoading(false);
     });
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [suspecious, noDetectcnt, cellphoneCnt, talking, time, date]); // Adding these dependencies ensures that the effect runs when any of them change
+  }, [count, time, date]); // Adding these dependencies ensures that the effect runs when any of them change
 
   if (loading) {
     return (
@@ -129,9 +97,7 @@ const  Home = () => {
 
         {/* Date and Time */}
         <View style={styles.dateTimeRow}>
-          <Text style={styles.dateText}>Monitor device: {cellphoneCnt}</Text>
-          <Text style={styles.timeText}>Alarm: {suspecious}</Text>
-          <Text style={styles.timeText}>TALKING: {talking}</Text>
+          <Text style={styles.dateText}>Cheating Occur: {count}</Text>
           <Text style={styles.timeText}>Date: {date}</Text>
           <Text style={styles.timeText}>Time: {time}</Text>
         </View>

@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loginscreen: {
-    backgroundColor: "#f2e3a9",
+    backgroundColor: "#e9c46a",
     flex: 1,
     width: "100%",
     alignItems: "center",
